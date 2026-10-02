@@ -1,14 +1,10 @@
-using System.ComponentModel.DataAnnotations.Schema;
-using api.DB.Models;
 using Dapper;
 using Npgsql;
-
 namespace api.db.Repo;
-public class ProductRepository
+public class DBRepository
 {
     private readonly string _connectionString;
-    
-    public ProductRepository(IConfiguration config)
+    public DBRepository(IConfiguration config)
     {
         _connectionString = config.GetConnectionString("Default")!;
     } 
@@ -28,18 +24,31 @@ public class ProductRepository
         using var con = new NpgsqlConnection(_connectionString);
         return await con.ExecuteAsync(sql,param);
     }
-    
-
-    public Task<IEnumerable<Products>> GetProductsAsync()
-        => QueryAsync<Products>("SELECT * FROM Products"); 
-
-    public async Task<int> CreateProduct(Products p)
+    public Task<int> PatchEntity(string tableName,object dto, Guid id)
     {
-        p.Id = Guid.NewGuid();
-        p.CreatedAt = DateTime.UtcNow;
-        return await ExecuteAsync(@"insert into Products (Id, Code,Name, Type, Form, Status,CreatedAt) 
-        Values (@Id, @Code, @Name,@Type,@Form,@Status,@CreatedAt)", p);
+        var update = dto.GetType().GetProperties().Where(p => p.GetValue(dto) is not null).ToDictionary(p=> p.Name, p=> p.GetValue(dto));
+        if (update.Count == 0)
+        {
+            return Task.FromResult(0);
+        }
+        var values = string.Join(", ", update.Keys.Select(k=> $"{k} = @{k}"));
+        var sql = $"update {tableName} set {values} where id = @Id";
+        var param = new DynamicParameters(update);
+        param.Add("Id",id);
+        return ExecuteAsync(sql,param);
     }
-
-    
+    public Task<int> CreateEntity (string tableName, object dto)
+    {
+        var fields = dto.GetType().GetProperties().Where(p => p.GetValue(dto) is not null).ToDictionary(p=> p.Name, p=> p.GetValue(dto));
+        var columns = string.Join(", ", fields.Keys);
+        var values = string.Join(", ",fields.Keys.Select(k=> $"@{k}"));
+        var sql = $"insert into {tableName} ({columns}) values ({values})";
+        var param = new DynamicParameters(fields);
+        Console.WriteLine($"SQL: {sql}");
+        return ExecuteAsync(sql, param);
+    }
+    public Task<IEnumerable<T>> GetEntities<T>(string table, int limit = 50, int offset = 0) => QueryAsync<T>($"select * from {table} limit @limit offset @offset", new {limit = limit, offset = offset});
+    public Task<int> DeleteEntity (string table, Guid id) => ExecuteAsync($"delete from {table} where id = @Id", new {Id = id});
+    public Task<T?> GetEntity<T>(string table, Guid id) => QueryFirstAsync<T>($"select * from {table} where Id = @Id", new {Id = id}); 
 }
+
