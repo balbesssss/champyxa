@@ -41,5 +41,9 @@ public class ProductRepository
         Values (@Id, @Code, @Name,@Type,@Form,@Status,@CreatedAt)", p);
     }
 
+    public async Task<Products> GetProducts(Guid id)
+    {
+        QueryFirstAsync($"select * from Products where Id = {id}")
+    } 
     
 }
