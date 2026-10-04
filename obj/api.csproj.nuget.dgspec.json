@@ -1,24 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\champion\\api\\api.csproj": {}
+    "C:\\champyxa\\api.csproj": {}
   },
   "projects": {
-    "C:\\champion\\api\\api.csproj": {
+    "C:\\champyxa\\api.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\champion\\api\\api.csproj",
+        "projectUniqueName": "C:\\champyxa\\api.csproj",
         "projectName": "api",
-        "projectPath": "C:\\champion\\api\\api.csproj",
-        "packagesPath": "C:\\Users\\lovelynanami\\.nuget\\packages\\",
-        "outputPath": "C:\\champion\\api\\obj\\",
+        "projectPath": "C:\\champyxa\\api.csproj",
+        "packagesPath": "C:\\Users\\Кира Йошикаге\\.nuget\\packages\\",
+        "outputPath": "C:\\champyxa\\obj\\",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-        ],
         "configFilePaths": [
-          "C:\\Users\\lovelynanami\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Users\\Кира Йошикаге\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
@@ -26,7 +22,6 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {

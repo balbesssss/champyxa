@@ -1,11 +1,10 @@
-namespace api.DB.Models;
+namespace api.DTO;
 
-public class User
+public class UserDTO
 {
-    public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Password {get;set;} = string.Empty;
     public Guid RoleId {get;set;} 
     public Guid DepartmentId {get;set;}
-    public DateTime CreatedAt { get; set; }
+    
 }

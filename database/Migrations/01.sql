@@ -13,7 +13,7 @@ create table Departments(
 create table Users(
     Id UUID primary key default gen_random_uuid(),
     Name varchar (100) not null,
-    PasswordHash varchar(150) not null,
+    Password varchar(150) not null,
     RoleId uuid references Roles(Id) not null,
     DepartmentId uuid references Departments(Id) not null,
     CreatedAt timestamp default now()
