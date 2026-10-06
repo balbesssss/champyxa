@@ -9,14 +9,29 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
-using Npgsql.Replication.PgOutput;
-
+using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
 builder.Services.AddScoped<DBRepository>();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Description = "JWT Authorization header using the Bearer scheme.",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = JwtBearerDefaults.AuthenticationScheme,
+        BearerFormat = "JWT"
+    });
+
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+    });
+});
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
 {
@@ -60,18 +75,18 @@ app.MapGet("/api/product/{id}", async (DBRepository db, Guid id) =>
 app.MapPost("/api/product", async (DBRepository db, Products p) =>
 {
     var result = await db.CreateEntity("Products", p);
-    return result > 0 ? Results.Created("/api/product", ApiResponses.Ok("Product add")) : Results.BadRequest(ApiResponses.Fail("invalid body",ErrorCode.));
+    return result > 0 ? Results.Created("/api/product", ApiResponses.Ok("Product add")) : Results.BadRequest(ApiResponses.Fail("invalid body",ErrorCode.CheckViolation));
 });
 app.MapDelete("/api/product/{id}",async (DBRepository db, Guid id ) =>
 {
     var result = await db.DeleteEntity("Products", id);
-    return result > 0 ? Results.Ok(ApiResponses.Ok("Product delete")) : Results.BadRequest(ApiResponses.Fail("invalid body"));
+    return result > 0 ? Results.Ok(ApiResponses.Ok("Product delete")) : Results.NotFound(ApiResponses.Fail("invalid body", ErrorCode.NotFound));
     
 });
 app.MapPatch("/api/product/{id}",async (DBRepository db, Guid id, PatchProduct p) =>
 {
     var result = await db.PatchEntity("Products", p, id);
-    return result > 0 ? Results.Ok(ApiResponses.Ok("Product edit")) : Results.BadRequest(ApiResponses.Fail("invalid body"));
+    return result > 0 ? Results.Ok(ApiResponses.Ok("Product edit")) : Results.BadRequest(ApiResponses.Fail("invalid body", ErrorCode.ValidationError));
 });
 
 app.MapGet("/api/role", async (DBRepository db, int limit = 50, int offset = 0) =>
@@ -83,7 +98,7 @@ app.MapGet("/api/role", async (DBRepository db, int limit = 50, int offset = 0) 
 app.MapGet("/api/role/{id}", async (DBRepository db, Guid id) =>
 {
     var item = await db.GetEntity<Role>("Roles", id); 
-    return item is not null? Results.Ok(ApiResponses<Role>.Ok(item)) : Results.BadRequest(ApiResponses.Fail("invalid body"));
+    return item is not null? Results.Ok(ApiResponses<Role>.Ok(item)) : Results.NotFound(ApiResponses.Fail("invalid body", ErrorCode.NotFound));
      
 });
 app.MapPost("/api/role", async (DBRepository db,CreateDR r) => await db.CreateEntity("roles",r));
@@ -96,13 +111,23 @@ app.MapPost("/api/department", async (DBRepository db, CreateDR d) => await db.C
 app.MapDelete("/api/department/{id}",async (DBRepository db, Guid id ) => await db.DeleteEntity("Departments",id));
 app.MapPatch("/api/department/{id}",async (DBRepository db, Guid id, PatchDR d ) => await db.PatchEntity("Departments",d,id));
 
+
+app.MapGet("/api/users/me", async (DBRepository db, ClaimsPrincipal us) =>
+{
+    var id = us.FindFirstValue(ClaimTypes.NameIdentifier);
+    Console.WriteLine(id);
+    var user = await db.GetEntity<User>("users",Guid.Parse(id));
+    return user;
+}).RequireAuthorization();
+
+
 app.MapGet("/api/users", async (DBRepository db, int limit = 50, int offset = 0 ) => await db.GetEntities<User>("Users",limit, offset));
 app.MapGet("/api/users/{id}", async (DBRepository db, Guid id) => await db.GetEntity<User>("Users",id));
 app.MapPost("/api/users", async ([FromServices]DBRepository db, [FromServices]IPasswordHasher<UserDTO> hasher, UserDTO user) =>
 {
     user.Password = hasher.HashPassword(user, user.Password);
     var result = await db.CreateEntity("Users", user);
-    return result > 0 ? Results.Ok(ApiResponses.Ok("User create")) : Results.BadRequest(ApiResponses.Fail("invalid body"));
+    return result > 0 ? Results.Ok(ApiResponses.Ok("User create")) : Results.BadRequest(ApiResponses.Fail("invalid body",ErrorCode.ForeignKeyViolation));
 });
 
 app.MapDelete("/api/users/{id}",async (DBRepository db, Guid id ) => await db.DeleteEntity("Users",id));
@@ -146,9 +171,5 @@ app.MapPost("/api/auth/login",async ([FromServices]IPasswordHasher<User> hasher,
     return Results.Ok(ApiResponses<JWTToken>.Ok(new JWTToken {Token = token, AccessToken = ""}));
 });
 
-// app.MapGet("/api/users/me", async (DBRepository db, Htt us) =>
-// {
-
-// });
 
 app.Run();
